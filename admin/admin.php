@@ -33,11 +33,11 @@ function rfpi_create_menu() {
 
 
 function register_rfpi_settings() {
-	//register our settings
-   register_setting( 'rfpi-settings-group', 'rfpi_post_types' );
-   register_setting( 'rfpi-settings-group', 'rfpi_wpmf_taxonomy' );
-   if ( get_option('rfpi_post_types') === false ) {
-      update_option( 'rfpi_post_types', array('post') ); // default checked
+   //register our settings
+   register_setting( 'rfpi-settings-group', 'rfpi_feed_url' );
+   register_setting( 'rfpi-settings-group', 'rfpi_fetch_period' );
+   if ( get_option('rfpi_fetch_period') === false ) {
+      update_option( 'rfpi_fetch_period', '24' ); // default checked
    } 
    
 }
@@ -45,44 +45,60 @@ function register_rfpi_settings() {
 function rfpi_settings_page() {
 ?>
 <div class="wrap">
-<h1><?php echo __('YouTube Featured Image Settings','rss-podcast-import') ?></h1>
+   <h1><?php echo __('RSS Feed Podcast Importer Settings','rss-podcast-import') ?></h1>
 
-<form method="post" action="options.php">
-   <?php settings_fields( 'rfpi-settings-group' ); ?>
-   <?php do_settings_sections( 'rfpi-settings-group' ); ?>
-   <table class="form-table">
+   <div class="card">
+      <form method="post" action="options.php">
+         <?php settings_fields( 'rfpi-settings-group' ); ?>
+         <?php do_settings_sections( 'rfpi-settings-group' ); ?>
+         <table class="form-table">
 
-      <tr valign="top">
-      <th scope="row">Post types</th>
-      <td>
-         <?php
-         $post_types = get_post_types(['public'=>true]);
+            <tr valign="top">
+               <th scope="row">RSS feed url</th>
+               <td>
+                  <input type="text" name="rfpi_feed_url" value="<?php echo esc_attr( get_option('rfpi_feed_url') ); ?>" style="width: 100%;" />
+               </td>
+            </tr>
 
-         $value = get_option('rfpi_post_types');
-
-         foreach ( $post_types as $post_type ) :
-
-         $checked = '';
-
-         $checked = ( @in_array( $post_type , $value ) ) ? 'checked="checked"': '';?>
-
-         <label><input type="checkbox" name="rfpi_post_types[]" value="<?php echo $post_type; ?>" <?php echo $checked; ?> /> <?php echo $post_type; ?></label><br />
-
-         <?php endforeach; ?>
-      </td>
-      </tr>
-
-      
-      <tr valign="top">
-      <th scope="row">WP Media Folder plugin folder ID for uploaded images</th>
-      <td><input type="text" name="rfpi_wpmf_taxonomy" value="<?php echo esc_attr( get_option('rfpi_wpmf_taxonomy') ); ?>" /></td>
-      </tr>
-    </table>
+            <tr valign="top">
+               <th scope="row">Fetch new episodes every</th>
+               <td>
+                  <?php
+                  $rfpi_fetch_period = get_option('rfpi_fetch_period')
 
 
-    
-    <?php submit_button(); ?>
+                  ?>
+                  <select name="rfpi_fetch_period" style="width: 100%;">
+                     <option value="24" <?php selected($rfpi_fetch_period, '24'); ?>>24 hours</option>
+                     <option value="12" <?php selected($rfpi_fetch_period, '12'); ?>>12 hours</option>
+                     <option value="6" <?php selected($rfpi_fetch_period, '6'); ?>>6 hours</option>
+                     <option value="3" <?php selected($rfpi_fetch_period, '3'); ?>>6 hours</option>
+                     <option value="manual" <?php selected($rfpi_fetch_period, 'manual'); ?>>Manual</option>
+                  </select>
+               </td>
+            </tr>
 
-</form>
+            <tr valign="top">
+               <th scope="row"></th>
+               <td>
+                  <button id="rfpi_fetch_now" class="button button-primary">Check new episodes</button> 
+               </td>
+            </tr>
+
+            <tr valign="top">
+               <td>
+                  <div class="">test</div>
+               </td>
+            </tr>
+
+         </table>
+
+
+         
+         <?php submit_button(); ?>
+
+      </form>
+   </div>
+
 </div>
 <?php }
