@@ -1,10 +1,10 @@
 <?php
 /*
-Plugin Name: RSS Feed Podcast Importer
+Plugin Name: RSS Feed Podcast Importer 
 Plugin URI: https://github.com/webdevs-pro/rss-podcast-import/
 Description: This plugin fetch RSS feed from BuzzSprout and import podcasts as posts to WordPress
 Version: 1.1
-Author: Alex Ischenko
+Author: Magnific Soft
 Author URI: https://github.com/webdevs-pro/
 Text Domain:  rss-podcast-import
 */
