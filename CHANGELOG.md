@@ -1,6 +1,10 @@
 RSS Feed Podcast Importer
 ====================================
 
+1.2
+-----
+- Iкmpovements
+
 1.1
 -----
 - Chanked import episodes

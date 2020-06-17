@@ -138,6 +138,9 @@ function rfpi_settings_page() {
 
          </table>
 
+         <div class="episodes_progress_text"></div>         
+         <progress id="episodes_progress" max="100" value="0" style="width: 100%; display: none;"></progress>
+
          <div id="rfpi_ajax_result"></div>
 
          

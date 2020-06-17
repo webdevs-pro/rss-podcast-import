@@ -38,7 +38,9 @@ jQuery(document).ready(function($) {
 			beforeSend: function( xhr ) {
             $('#rfpi_spinner').addClass('is-active');
             $('#rfpi_fetch_now').addClass('disabled');
-            print_to_log('Fetching feed...');
+            $('#episodes_progress').show();
+            // print_to_log('Fetching feed...');
+            $('.episodes_progress_text').html('Fetching feed...');
 			},
 			success: function( response ) {
             
@@ -52,7 +54,9 @@ jQuery(document).ready(function($) {
             // $('#rfpi_fetch_now').removeClass('disabled');
 
 
-            print_to_log('Total episodes: ' + resp_obj_count);
+            // print_to_log('Total episodes: ' + resp_obj_count);
+            $('.episodes_progress_text').html('0 of ' + resp_obj_count);
+            $('#episodes_progress').attr('max', resp_obj_count);
 
             // $('#rfpi_ajax_result').html($('#rfpi_ajax_result').html() + response);
 			}
@@ -61,11 +65,18 @@ jQuery(document).ready(function($) {
 
 
       // FETCHING ITEM
-      var item = 1;
-      // reverse foreach
-      $.each(Object.keys(resp_obj).reverse(),function(i,key){
+      var item = 0;
 
-         var value = resp_obj[key];
+      fetch_item();
+      function fetch_item() {
+   
+         if(item >= resp_obj_count) {
+            stop_fetching();
+            return;
+         }
+
+         var value = resp_obj[item];
+         
          var json_data = JSON.stringify(value);
 
          var episode_data = {
@@ -81,7 +92,7 @@ jQuery(document).ready(function($) {
             data: episode_data,
             async: false, 
             beforeSend: function( xhr ) {
-               print_to_log('Fetching episode: ' + item);
+               // print_to_log('Fetching episode: ' + item);
             },
             success: function( response ) {
 
@@ -93,29 +104,34 @@ jQuery(document).ready(function($) {
                
 
 
-               print_to_log('Episode: ' + item + ':');
-               print_to_log(response);
+               // print_to_log('Episode: ' + item + ':');
+               // print_to_log(response);
 
                // $('#rfpi_ajax_result').html($('#rfpi_ajax_result').html() + response);
             }
          });
 
+
+
          item++;
 
-      });
+         setTimeout( function() { 
+            $('.episodes_progress_text').html(item + ' of ' + resp_obj_count);
+            $('#episodes_progress').val(item);
+            fetch_item(); 
+         }, 100 );
+
+
+      };
 
 
 
-
-
-      print_to_log('Done');
-      $('#rfpi_spinner').removeClass('is-active');
-      $('#rfpi_fetch_now').removeClass('disabled');
-
-
-
-
-
+      function stop_fetching() {
+         $('.episodes_progress_text').html($('.episodes_progress_text').html() + ', Done');
+         // print_to_log('Done');
+         $('#rfpi_spinner').removeClass('is-active');
+         $('#rfpi_fetch_now').removeClass('disabled');
+      }
 
 
 

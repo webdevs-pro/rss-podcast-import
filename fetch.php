@@ -101,6 +101,13 @@ function get_rss_xml($args) {
 
       }
 
+      // reverse array
+      $k = array_keys($response_arr);
+      $v = array_values($response_arr);
+      $rv = array_reverse($v);
+      $response_arr = array_combine($k, $rv);
+
+
       return json_encode($response_arr);
 }
 
