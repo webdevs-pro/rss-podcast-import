@@ -1,6 +1,10 @@
 RSS Feed Podcast Importer
 ====================================
 
+1.3
+-----
+- Iкmpovements
+
 1.2
 -----
 - Iкmpovements

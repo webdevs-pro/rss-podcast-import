@@ -40,7 +40,7 @@ function register_rfpi_settings() {
    register_setting( 'rfpi-settings-group', 'rfpi_category' );
 
    if ( get_option('rfpi_fetch_period') === false ) {
-      update_option( 'rfpi_fetch_period', '24' ); // default checked
+      update_option( 'rfpi_fetch_period', '48' ); // default checked
    } 
    if ( get_option('rfpi_update_existing') === false ) {
       update_option( 'rfpi_update_existing', '1' ); // default checked
@@ -79,10 +79,9 @@ function rfpi_settings_page() {
 
                   ?>
                   <select id="rfpi_fetch_period" name="rfpi_fetch_period" style="width: 100%;" autocomplete="off">
+                     <option value="48" <?php selected($rfpi_fetch_period, '48'); ?>>48 hours</option>
                      <option value="24" <?php selected($rfpi_fetch_period, '24'); ?>>24 hours</option>
                      <option value="12" <?php selected($rfpi_fetch_period, '12'); ?>>12 hours</option>
-                     <option value="6" <?php selected($rfpi_fetch_period, '6'); ?>>6 hours</option>
-                     <option value="3" <?php selected($rfpi_fetch_period, '3'); ?>>6 hours</option>
                      <option value="manual" <?php selected($rfpi_fetch_period, 'manual'); ?>>Manual</option>
                   </select>
                </td>
@@ -151,3 +150,40 @@ function rfpi_settings_page() {
 
 </div>
 <?php }
+
+
+
+function rfpi_change_cron_after_save( $old_value, $new_value ) {
+
+	if ( $old_value != $new_value ) {
+      // This value has been changed. Insert code here.
+      error_log($old_value);
+      error_log($new_value);
+      if ($new_value == '48' || $new_value == '24' || $new_value == '12' ) {
+         error_log('changing to ' . $new_value);
+         if ( !wp_next_scheduled( 'rfpi_fetch_new_episodes' ) ) {
+            error_log('not');
+            error_log(HOUR_IN_SECONDS * intval($new_value));
+            wp_schedule_event(time(), $new_value . '_hours', 'rfpi_fetch_new_episodes');
+         } else {
+            error_log('re');
+            wp_clear_scheduled_hook( 'rfpi_fetch_new_episodes' );
+            // wp_reschedule_event(time(), $new_value . '_hours', 'rfpi_fetch_new_episodes');
+            wp_schedule_event(time(), $new_value . '_hours', 'rfpi_fetch_new_episodes');
+
+         }
+      }
+      if ($new_value == 'manual') {
+         wp_clear_scheduled_hook( 'rfpi_fetch_new_episodes' );
+      }
+
+      $timestamp = wp_next_scheduled( 'rfpi_fetch_new_episodes' );
+
+      error_log($timestamp);
+
+ 
+
+	}
+
+}
+add_action( 'update_option_rfpi_fetch_period', 'rfpi_change_cron_after_save', 10, 2 );

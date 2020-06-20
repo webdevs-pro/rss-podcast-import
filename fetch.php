@@ -187,6 +187,7 @@ function rfpi_generate_featured_image( $image_url, $post_id  ) {
 
 
       require_once ABSPATH . 'wp-admin/includes/file.php';
+      include_once( ABSPATH . 'wp-admin/includes/image.php' );
 
       // upload image to wordpress
       $image_contents = file_get_contents($image_url);
@@ -215,5 +216,165 @@ function rfpi_generate_featured_image( $image_url, $post_id  ) {
       
       
    }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function cron_fetch_new_episodes() {
+
+   $args = array(
+      'url' => get_option('rfpi_feed_url'),
+      'mode' => 'new',
+      'cat' => get_option('rfpi_category'),
+   );
+
+   error_log('--- RSS Podcast Import ---');
+
+   $file_headers = @get_headers($args['url']);
+
+   if( !$file_headers || substr($file_headers[0], 9, 3) != "200") {
+      error_log('Status: ERROR (File not exist)');
+      wp_die();
+   } else {
+
+      $content = file_get_contents($args['url']); 
+
+      try {
+         $rss = new SimpleXmlElement($content); 
+         if(!isset($rss->channel->item)) {
+            return false;
+         }
+      } 
+      catch(Exception $e){ 
+         error_log('Status: ERROR (Invalid RSS feed)');
+         wp_die();
+      }  
+
+   }
+
+   // create/update posts
+   $ns = $rss->getNamespaces(true);
+
+   $max_items = 500;
+
+   $created = 0;
+
+   $episodes = array();
+
+   $items = $rss->channel->item;
+   $count = count($items);
+
+   if($count >= $max_items ) return 'Status: ERROR (Too much episodes)';
+
+   for ($i = $count-1; $i >= 0; $i--) {
+
+      $item = $items[$i];
+      
+      $itunes_data = $item->children($ns["itunes"]);
+
+      // RSS item array
+      $episodes[$i]['title'] = isset(($item->title)) ? ((string) $item->title) : '';
+      $episodes[$i]['description'] = isset(($itunes_data->summary)) ? ((string) $itunes_data->summary) : '';
+      $episodes[$i]['content'] = isset(($item->description)) ? ((string) $item->description) : '';
+      $episodes[$i]['author'] = isset(($itunes_data->author)) ? ((string) $itunes_data->author) : '';
+      $episodes[$i]['image'] =  isset(($itunes_data->image)) ? ((string) $itunes_data->image->attributes()->href) : '';
+      $episodes[$i]['audio'] = isset(($item->enclosure)) ? ((string) $item->enclosure->attributes()->url) : '';
+      $episodes[$i]['date'] = isset(($item->pubDate)) ? ((string) $item->pubDate) : '';
+      $episodes[$i]['season'] = isset(($itunes_data->season)) ? ((string) $itunes_data->season) : '';
+      $episodes[$i]['episode'] = isset(($itunes_data->episode)) ? ((string) $itunes_data->episode) : '';
+      $episodes[$i]['buzzsprout_guid'] = isset(($item->guid)) ? ((string) $item->guid) : '';
+
+
+      // post array
+      $post_content = '
+         <!-- wp:audio -->
+         <figure class="wp-block-audio"><audio controls src="' . $episodes[$i]['audio'] . '"></audio></figure>
+         <!-- /wp:audio -->      
+      ';
+      $post_content .= $episodes[$i]['content'];
+
+      $date = DateTime::createFromFormat('D, d M Y H:i:s P', $episodes[$i]['date']);
+
+      $post_data = array(
+         'post_date'     => $date->format('Y-m-d H:i:s'),
+         'post_title'    => wp_strip_all_tags( $episodes[$i]['title'] ),
+         'post_content'  => $post_content,
+         'post_excerpt'  => wp_strip_all_tags( $episodes[$i]['description'] ),
+         'post_status'   => 'publish',
+         'post_author'   => get_current_user_id(),
+         'post_category' => array($args['cat'],),
+         'meta_input'    => [
+            'rfpi_author'     => $episodes[$i]['author'],
+            'rfpi_image'           => $episodes[$i]['image'],
+            'rfpi_audio'           => $episodes[$i]['audio'],
+            'rfpi_date'            => $episodes[$i]['date'],
+            'rfpi_season'          => $episodes[$i]['season'],
+            'rfpi_episode'         => $episodes[$i]['episode'],
+            'rfpi_guid' => $episodes[$i]['buzzsprout_guid'],
+         ]
+      );
+
+      // error_log(print_r($post_data,true));
+      
+      // check is post with GUID exist
+      $query_args = array(
+         'meta_key' => 'rfpi_guid',
+         'meta_value' => $episodes[$i]['buzzsprout_guid'],
+         'post_type' => 'post',
+      );
+      $posts = get_posts($query_args);
+
+      if(!array_key_exists('0', $posts)) {
+
+         // create new post
+         $post_id = wp_insert_post( $post_data );
+         if($post_data['meta_input']['rfpi_image'] != "") {
+            // error_log('Generating new image (new)' . $i . '-' . $post_data['meta_input']['rfpi_image']);
+            rfpi_generate_featured_image($post_data['meta_input']['rfpi_image'], $post_id);
+         }
+         $created++;
+         // error_log('Podcast ' . $episodes[$i]['buzzsprout_guid'] . ' not exist, creating new post.');
+
+      }
+
+
+
+      wp_reset_postdata();
+
+      	
+      
+   }
+
+   $response = 'Status: OK<br>';
+   $response .= 'Total: ' . $count . '<br>';
+   $response .= 'New: ' . $created . '<br>';
+
+   
+   error_log($response);
+   error_log('--------------------------');
+
 
 }

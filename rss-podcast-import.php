@@ -3,7 +3,7 @@
 Plugin Name: RSS Feed Podcast Importer 
 Plugin URI: https://github.com/webdevs-pro/rss-podcast-import/
 Description: This plugin fetch RSS feed from BuzzSprout and import podcasts as posts to WordPress
-Version: 1.2
+Version: 1.3
 Author: Magnific Soft
 Author URI: https://github.com/webdevs-pro/
 Text Domain:  rss-podcast-import
@@ -151,6 +151,51 @@ $myUpdateChecker = Puc_v4_Factory::buildUpdateChecker(
 
 
 
+// регистрируем 5минутный интервал
+add_filter( 'cron_schedules', 'cron_add_five_min' );
+function cron_add_five_min( $schedules ) {
+	$schedules['48_hours'] = array(
+		'interval' => 60 * 60 * 48,
+		'display' => 'Every 48 hours'
+    );
+    $schedules['24_hours'] = array(
+		'interval' => 60 * 60 * 24,
+		'display' => 'Every 24 hours'
+    );
+    $schedules['12_hours'] = array(
+		'interval' => 60 * 60 * 12,
+		'display' => 'Every 12 hours'
+	);
+	return $schedules;
+}
 
+
+register_activation_hook(__FILE__, 'rfpi_activation');
+function rfpi_activation() {
+    
+    $period = get_option('rfpi_fetch_period');
+
+    if (! wp_next_scheduled ( 'rfpi_fetch_new_episodes' )) {
+        if (!isset($period)) {
+            $period = '48';
+        }
+        wp_schedule_event(time(), $period . '_hours', 'rfpi_fetch_new_episodes');
+        $timestamp = wp_next_scheduled( 'rfpi_fetch_new_episodes' );
+
+        error_log($timestamp);
+    }
+}
+ 
+add_action('rfpi_fetch_new_episodes', 'rfpi_check_new_episodes_fn');
+function rfpi_check_new_episodes_fn() {
+    // do something every hour
+    error_log('DOING CRON');
+    cron_fetch_new_episodes();
+}
+
+register_deactivation_hook( __FILE__, 'rfpi_deactivation' );
+function rfpi_deactivation() {
+    wp_clear_scheduled_hook( 'rfpi_fetch_new_episodes' );
+}
 
 
